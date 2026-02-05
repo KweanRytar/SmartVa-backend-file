@@ -102,7 +102,7 @@ export const login = async (req, res, next) => {
 
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // sign JWT
@@ -113,9 +113,9 @@ export const login = async (req, res, next) => {
     // set cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: false, // change to true in production (HTTPS)
+      secure: true,
       maxAge: 24 * 60 * 60 * 1000,
-      sameSite: "Lax",
+      sameSite: "None",
     });
 
     res.status(200).json({
@@ -240,7 +240,7 @@ export const confirmResetToken = async (req, res, next) => {
     }
 
     const resetJWT = jwt.sign({ id: user._id, email: user.email }, process.env.jwtSecret, { expiresIn: '10m' });
-    res.cookie('resetToken', resetJWT, { httpOnly: true, secure: false, maxAge: 10 * 60 * 1000, sameSite: 'Lax' });
+    res.cookie('resetToken', resetJWT, { httpOnly: true, secure: true, maxAge: 10 * 60 * 1000, sameSite: 'None' });
 
     res.status(200).json({ message: 'Token confirmed. Proceed to reset password.' });
   } catch (err) {
