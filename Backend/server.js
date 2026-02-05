@@ -1,3 +1,9 @@
+// import dotenv
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+
 import express from 'express';
 import http from 'http';
 import cookieParser from 'cookie-parser';
@@ -20,8 +26,6 @@ import noteRoutes from './routes/notes.routes.js';
 // services
 import { sendEmail, sendNotifications } from "./controller/sendEmailReminder.js";
 
-// import dotenv
-import dotenv from 'dotenv';
 
 import { agenda } from './controller/event.controller.js';
 import deleteExpiredEvents from './controller/deletedExpiredEvent.js';
@@ -39,7 +43,6 @@ await dbConnection();
 // 🔥 INIT SOCKET FIRST
 initSocket(server);
 
-dotenv.config();
 
 
 
