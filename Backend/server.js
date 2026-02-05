@@ -53,7 +53,7 @@ agenda.start();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: process.env.frontend_url,
+  origin: [process.env.frontend_url, process.env.ALTERNATIVE_FRONTEND_URL],
   credentials: true,
 }));
 
