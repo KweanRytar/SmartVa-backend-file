@@ -7,8 +7,8 @@ routes.get('/eventName/:name', authenticate, getEventByName);
 routes.get('/events4DDay/', authenticate, getEventFortheDay );
 routes.get('/busy/busyTime/', authenticate, getBusyTime)
 
-routes.get('/', authenticate, getAllEvents);
-routes.get('/allEvents/', authenticate, getEvents);
+routes.get('/', authenticate, getEvents);
+routes.get('/allEvents', authenticate, getAllEvents);
 routes.post('/', authenticate, createEvent);
 routes.put('/:id', authenticate, updateEvent);
 routes.get('/:id', authenticate, getEventById);
