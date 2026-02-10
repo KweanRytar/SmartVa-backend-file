@@ -944,6 +944,8 @@ export const getDelegatesWithOverdueTasks = (req, res, next) =>
  * Send email to delegate(s) — owner only
  */
 export const messageDelegate = async (req, res, next) => {
+
+  console.log("messageDelegate route hit with body:", req.body); // ← log incoming request body for debugging
   try {
     const { delegateEmail, subject, message } = req.body;
     const userId = getUserInfo(req);
