@@ -1,23 +1,10 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import mongoose from "mongoose";
 
 import Event from "../model/event.model.js";
 
 /* ------------------ MAIL TRANSPORTER ------------------ */
-const transporter = nodemailer.createTransport({
- host: process.env.TURBO_HOST,
-  port: process.env.TURBO_PORT,
-  secure: process.env.TURBO_PORT == 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.TURBO_USER,
-    pass: process.env.TURBO_PASS
-  },
-   connectionTimeout: 60000, // 
-  greetingTimeout: 30000,
-  socketTimeout: 120000,
-  logger: true,
-  debug: true
-});
+const resend = new Resend(process.env.RESEND_API);
 
 /* ------------------ DATE FORMATTER ------------------ */
 const formatDate = (date) => {
@@ -44,7 +31,8 @@ export const sendMailToConcernedMembers = async (
   venue,
   vaName
 ) => {
-  if (!email || !title || !startTime || !endTime || !venue) {
+  try {
+    if (!email || !title || !startTime || !endTime || !venue) {
     throw new Error("Missing required data to send email");
   }
 
@@ -57,7 +45,7 @@ export const sendMailToConcernedMembers = async (
     throw new Error("Event deleted or expired, cannot send email");
   }
 
-  await transporter.sendMail({
+  const {data, error} = await resend.emails.send({
     from: `"SmartVA" <${process.env.emailA}>`,
     to: email,
     subject: `You’ve been added to an event: ${title}`,
@@ -75,20 +63,28 @@ export const sendMailToConcernedMembers = async (
       </div>
     `
   });
+  if(error) {
+    throw new Error(`Resend API error: ${error.message}`);
+  }
+  return `Notification email sent to ${email}`;
+  } catch (error) {
+    throw new Error(`Failed to send notification email: ${error.message}`);
+  }
 };
 
 /* =====================================================
    SEND MAIL WHEN EVENT IS UPDATED
 ===================================================== */
 export const sendUpdatedEventEmail = async (email, name, updatedEvent) => {
-  if (!email || !updatedEvent?.title) {
+  try {
+    if (!email || !updatedEvent?.title) {
     throw new Error("Missing required data to send update email");
   }
 
   const title = updatedEvent.title || "Scheduled Event";
 
-  await transporter.sendMail({
-    from: `"SmartVA" <${process.env.TURBO_FROM}>`,
+ const {data, error} = await resend.emails.send({
+    from: `"SmartVA" <${process.env.EMAIL_FROM}>`,
     to: email,
     subject: `Updated Event Details: ${title}`,
     html: `
@@ -106,6 +102,13 @@ export const sendUpdatedEventEmail = async (email, name, updatedEvent) => {
       </div>
     `
   });
+  if (error) {
+    throw new Error(`Resend API error: ${error.message}`);
+  }
+  return `Updated event email sent to ${email}`;
+  } catch (error) {
+    throw new Error(`Failed to send updated event email: ${error.message}`);
+  }
 };
 
 // SEND MAIL TO DELEGATES OF A TASK
@@ -117,11 +120,12 @@ export const sendMailToDelegatesOfTask = async (
   dueDate,
   vaName
 ) => {
-  if (!email || !taskTitle || !dueDate) {
+ try {
+   if (!email || !taskTitle || !dueDate) {
     throw new Error("Missing required data to send task email");
   }
-  await transporter.sendMail({
-    from: `"SmartVA" <${process.env.TURBO_FROM}>`,
+  const {data, error} = await resend.emails.send({
+    from: `"SmartVA" <${process.env.EMAIL_FROM}>`,
     to: email,
     subject: `New Task Assigned: ${taskTitle}`,
     html: `
@@ -138,11 +142,19 @@ export const sendMailToDelegatesOfTask = async (
       </div>
     `
   });
+  if (error) {
+    throw new Error(`Resend API error: ${error.message}`);
+  }
+  return `Task assignment email sent to ${email}`;
+ } catch (error) {
+  throw new Error(`Failed to send task assignment email: ${error.message}`);
+ }
 }
 
 // SEND MAIL TO DELEGATES WHEN TASK IS UPDATED
 export const sendUpdatedTaskEmail = async (email, name, oldEvent, updatedTask) => {
-  if (!email || !updatedTask?.title) {
+ try {
+   if (!email || !updatedTask?.title) {
     throw new Error("Missing required data to send updated task email");
   }
 
@@ -160,8 +172,8 @@ export const sendUpdatedTaskEmail = async (email, name, oldEvent, updatedTask) =
     });
   };
 
-  await transporter.sendMail({
-    from: `"SmartVA" <${process.env.TURBO_FROM}>`,
+ const {data, error}= await resend.emails.send({
+    from: `"SmartVA" <${process.env.EMAIL_FROM}>`,
     to: email,
     subject: `Updated Task Details: ${title}`,
     html: `
@@ -201,4 +213,11 @@ export const sendUpdatedTaskEmail = async (email, name, oldEvent, updatedTask) =
       </div>
     `
   });
+  if (error) {
+    throw new Error(`Resend API error: ${error.message}`);
+  }
+  return `Updated task email sent to ${email}`;
+ } catch (error) {
+  throw new Error(`Failed to send updated task email: ${error.message}`);
+ }
 };

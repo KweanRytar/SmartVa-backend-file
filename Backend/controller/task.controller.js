@@ -1,6 +1,6 @@
 // task.controller.js
 import { Task } from "../model/task.model.js";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 import { User } from "../model/user.model.js";
 import { Notification } from "../model/notification.model.js";
@@ -22,6 +22,8 @@ const getUserInfo = (req) => {
   return userId
  
 };
+
+const resend = new Resend(process.env.RESEND_API)
 
 /**
  * Create a task
@@ -982,25 +984,11 @@ export const messageDelegate = async (req, res, next) => {
       });
     }
 
-    // 📧 Setup mail transport
-    const transporter = nodemailer.createTransport({
-      host: process.env.TURBO_HOST,
-  port: process.env.TURBO_PORT,
-  secure: process.env.TURBO_PORT == 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.TURBO_USER,
-    pass: process.env.TURBO_PASS
-  },
-  connectionTimeout: 60000, // 
-  greetingTimeout: 30000,
-  socketTimeout: 120000,
-  logger: true,
-  debug: true
-    });
+    
 
     // ✉️ Send mail
-    await transporter.sendMail({
-      from: `${sender.fullName} <${process.env.TURBO_FROM}>`,
+   const {data, error} = await resend.emails.send({
+      from: `${sender.fullName} <${process.env.EMAIL_FROM}>`,
       to: email,
       subject,
       html: `
@@ -1019,7 +1007,11 @@ export const messageDelegate = async (req, res, next) => {
         </div>
       `,
     });
-console.log("Email sent to delegate:", email);
+    if (error) {
+      
+      return res.status(500).json({ message: "Failed to send email" });
+    }
+
     return res.status(200).json({
       success: true,
       message: "Message sent successfully",
@@ -1077,28 +1069,19 @@ export const messageSubtaskDelegate = async (req, res, next) => {
       recipients = subtask.delegate;
     }
 
-    const transporter = nodemailer.createTransport({
-     host: process.env.TURBO_HOST,
-  port: process.env.TURBO_PORT,
-  secure: process.env.TURBO_PORT == 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.TURBO_USER,
-    pass: process.env.TURBO_PASS
-  },
-   connectionTimeout: 60000, // 
-  greetingTimeout: 30000,
-  socketTimeout: 120000,
-  logger: true,
-  debug: true
-    });
+   
 
     for (const delegate of recipients) {
-      await transporter.sendMail({
-        from: `${displayName} <${process.env.TURBO_FROM}>`,
+      const {data, error} = await resend.emails.send({
+        from: `${displayName} <${process.env.EMAIL_FROM}>`,
         to: delegate.email,
         subject: "Subtask Reminder",
         text: message
       });
+    }
+
+    if (error) {
+      throw new Error("Failed to send email to one or more delegates");
     }
 
     return res.status(200).json({ message: `Message sent to ${recipients.length} subtask delegate(s) successfully` });

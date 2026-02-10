@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { Resend } from "resend";
 
 import { getIO } from "../socket.js";
 import { agenda } from './event.controller.js';
@@ -6,20 +6,8 @@ import { Notification } from '../model/notification.model.js';
 import Event from '../model/event.model.js';
 
 // Create transporter once for reuse
-const transporter = nodemailer.createTransport({
- host: process.env.TURBO_HOST,
-  port: process.env.TURBO_PORT,
-  secure: process.env.TURBO_PORT == 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.TURBO_USER,
-    pass: process.env.TURBO_PASS
-  },
-   connectionTimeout: 60000, // 
-  greetingTimeout: 30000,
-  socketTimeout: 120000,
-  logger: true,
-  debug: true
-});
+const resend = new Resend(process.env.RESEND_API)
+
 
 // Helper for consistent date formatting
 const formatDate = (date) =>
@@ -66,8 +54,8 @@ export const sendEmail = () => {
     if (!event || new Date(event.endTime) <= new Date()) return;
 
     try {
-      await transporter.sendMail({
-        from: `"${vaName}" <${process.env.TURBO_FROM}>`,
+      const {data, error}= await resend.emails.send({
+        from: `"${vaName}" <${process.env.EMAIL_FROM}>`,
         to: email,
         subject: `Reminder for ${title}`,
         html: `
@@ -87,9 +75,28 @@ export const sendEmail = () => {
         `
       });
 
+      if (error) {
+        throw new Error(`Resend API error: ${error.message}`);
+      }
+
       await Notification.create({
         message: `Reminder email for "${title}" has been sent to ${email}`
       });
+
+
+      // success handling 
+    const successResponse = {
+      success: true,
+      status: 'sent',
+      message: `Cancellation email sent to ${email}`,
+      details: {
+        messageId: data.id,
+        recipient: email,
+        event: title,
+        sentAt: new Date().toISOString(),
+      }
+    }
+    return successResponse.message;
 
     } catch (error) {
       throw new Error(`Failed to send reminder email: ${error.message}`);
@@ -99,8 +106,9 @@ export const sendEmail = () => {
 
 // send mail to delegates when assigned task is updated
 export const sendTaskUpdateEmail = async (email, taskTitle, vaName) => {
-  await transporter.sendMail({
-    from: `"${vaName}" <${process.env.TURBO_FROM}>`,
+  try {
+    const {data, error}= await resend.emails.sendMail({
+    from: `"${vaName}" <${process.env.EMAIL_FROM}>`,
     to: email,
     subject: `Task Updated: ${taskTitle}`,
     html: `
@@ -112,14 +120,24 @@ export const sendTaskUpdateEmail = async (email, taskTitle, vaName) => {
       </div>
     `
   });
+
+  if (error) {
+    throw new Error(`Resend API error: ${error.message}`);
+  }
+
+  return `Task update email sent to ${email}`;
+  } catch (error) {
+    throw new Error(`Failed to send task update email: ${error.message}`);
+  }
 }
 
 // =========================
 // Verification Email
 // =========================
 export const sendVerifyEmail = async (email, verifyToken) => {
-  await transporter.sendMail({
-    from: `"SmartVA" <${process.env.TURBO_FROM}>`,
+ try {
+   const {data, error} = await resend.emails.send({
+    from: `"SmartVA" <${process.env.EMAIL_FROM}>`,
     to: email,
     subject: `Verify your email`,
     html: `
@@ -136,14 +154,22 @@ export const sendVerifyEmail = async (email, verifyToken) => {
       </div>
     `
   });
+  if (error) {
+    throw new Error(`Resend API error: ${error.message}`);
+  }
+  return `Verification email sent to ${email}`;
+ } catch (error) {
+  throw new Error(`Failed to send verification email: ${error.message}`);
+ }
 };
 
 // =========================
 // Reset Password Email
 // =========================
 export const sendResetPasswordEmail = async (email, resetToken) => {
-  await transporter.sendMail({
-    from: `"SmartVA" <${process.env.TURBO_FROM}>`,
+  try {
+    const {data, error} = await resend.emails.send({
+    from: `"SmartVA" <${process.env.EMAIL_FROM}>`,
     to: email,
     subject: `Reset your password`,
     html: `
@@ -159,4 +185,12 @@ export const sendResetPasswordEmail = async (email, resetToken) => {
       </div>
     `
   });
+  if (error) {
+    throw new Error(`Resend API error: ${error.message}`);  
+  }
+  return `Password reset email sent to ${email}`;
+
+  } catch (error) {
+    throw new Error(`Failed to send password reset email: ${error.message}`);
+  }
 };
