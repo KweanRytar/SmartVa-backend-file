@@ -13,7 +13,11 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.TURBO_USER,
     pass: process.env.TURBO_PASS
-  }
+  },
+  // increase timeouts
+  connectionTimeout: 30000, // 
+  greetingTimeout: 15000,
+  socketTimeout: 60000
 });
 
 // Helper for consistent date formatting

@@ -56,6 +56,10 @@ agenda.start();
 app.use(express.json());
 app.use(cookieParser());
 
+
+// SET PROXY
+app.set('trust proxy', 1);
+
 // CORS
 const allowedOrigins = [
   process.env.frontend_url,

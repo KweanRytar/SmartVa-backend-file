@@ -990,7 +990,11 @@ export const messageDelegate = async (req, res, next) => {
   auth: {
     user: process.env.TURBO_USER,
     pass: process.env.TURBO_PASS
-  }
+  },
+  // increase timeouts
+  connectionTimeout: 30000, // 
+  greetingTimeout: 15000,
+  socketTimeout: 60000
     });
 
     // ✉️ Send mail
@@ -1079,7 +1083,11 @@ export const messageSubtaskDelegate = async (req, res, next) => {
   auth: {
     user: process.env.TURBO_USER,
     pass: process.env.TURBO_PASS
-  }
+  },
+  // increase timeouts
+  connectionTimeout: 30000, // 
+  greetingTimeout: 15000,
+  socketTimeout: 60000
     });
 
     for (const delegate of recipients) {
