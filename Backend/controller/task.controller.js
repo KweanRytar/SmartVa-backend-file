@@ -1007,11 +1007,29 @@ export const messageDelegate = async (req, res, next) => {
         </div>
       `,
     });
-    if (error) {
-      
-      return res.status(500).json({ message: "Failed to send email" });
-    }
+   if (error) {
+  console.error("Resend send error:", error); // ← log full error!
 
+  let errorMessage = "Failed to send email";
+  let status = 500;
+
+  if (error.statusCode === 401 || error.statusCode === 403) {
+    errorMessage = "Email service authentication failed. Contact support.";
+    status = 503;
+  } else if (error.statusCode === 429) {
+    errorMessage = "Too many emails sent. Please try again later.";
+    status = 429;
+  } else if (error.message?.includes("from")) {
+    errorMessage = "Invalid sender address. Please check configuration.";
+  } else if (error.message) {
+    errorMessage = error.message; // expose safe parts only
+  }
+
+  return res.status(status).json({ 
+    message: errorMessage,
+    // optional: errorCode: error.code or error.statusCode
+  });
+}
     return res.status(200).json({
       success: true,
       message: "Message sent successfully",
