@@ -990,7 +990,7 @@ export const messageDelegate = async (req, res, next) => {
 
     // ✉️ Send mail
    const {data, error} = await resend.emails.send({
-      from: `${sender.fullName} <${process.env.EMAIL_FROM}>`,
+      from: `SMARTVA <${process.env.EMAIL_FROM}>`,
       to: email,
       subject,
       html: `
@@ -1060,7 +1060,7 @@ export const messageSubtaskDelegate = async (req, res, next) => {
       return next(err);
     }
 
-    const subtask = task.subtask.id(subtaskId);
+    const subtask = task.subTasks.id(subtaskId);
     if (!subtask) {
       const err = new Error("Subtask not found");
       err.statusCode = 404;
@@ -1093,7 +1093,7 @@ export const messageSubtaskDelegate = async (req, res, next) => {
 
     for (const delegate of recipients) {
       const {data, error} = await resend.emails.send({
-        from: `${displayName} <${process.env.EMAIL_FROM}>`,
+        from: `SMARTVA <${process.env.EMAIL_FROM}>`,
         to: delegate.email,
         subject: "Subtask Reminder",
         text: message

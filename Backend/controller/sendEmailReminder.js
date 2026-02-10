@@ -55,7 +55,7 @@ export const sendEmail = () => {
 
     try {
       const {data, error}= await resend.emails.send({
-        from: `"${vaName}" <${process.env.EMAIL_FROM}>`,
+        from: `"SMARTVA" <${process.env.EMAIL_FROM}>`,
         to: email,
         subject: `Reminder for ${title}`,
         html: `
@@ -108,7 +108,7 @@ export const sendEmail = () => {
 export const sendTaskUpdateEmail = async (email, taskTitle, vaName) => {
   try {
     const {data, error}= await resend.emails.sendMail({
-    from: `"${vaName}" <${process.env.EMAIL_FROM}>`,
+    from: `"SMARTVA" <${process.env.EMAIL_FROM}>`,
     to: email,
     subject: `Task Updated: ${taskTitle}`,
     html: `
