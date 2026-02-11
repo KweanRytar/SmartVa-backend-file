@@ -74,6 +74,10 @@ app.use(cors({
 // ================================================
 //                Routes
 // ================================================
+app.get("/", (req, res) => {
+  res.status(200).send("SmartVA backend is alive 🚀");
+});
+
 app.use("/contact", contactRoutes);
 app.use("/document", documentRoutes);
 app.use("/events", eventRoutes);
