@@ -297,24 +297,28 @@ console.log(req.body)
     // Validate responses if responseStatus is 'responded'
     let validResponses = [];
     if (responseStatus === "responded") {
-      validResponses = responses.map((resp, idx) => {
-        const { title, summary, type } = resp;
-        if (!title || !summary) {
-          const err = new Error(`Response at index ${idx} is missing required fields`);
-          err.statusCode = 400;
-          throw err;
-        }
-        return {
-          title: resp.title.trim(),
-          summary: resp.summary.trim(),
-          ref: resp.ref?.trim() || undefined,
-          resStatus: Boolean(resp.resStatus),
-          type: ["incoming", "outgoing"].includes(type) ? type : "outgoing",
-          receptionMode: resp.receptionMode,
-          fileCategory: receptionMode === 'in-person' ? resp.fileCategory : undefined,
-          respondedAt: resp.respondedAt
-        };
-      });
+      // Correct fileCategory handling per response
+validResponses = responses.map((resp, idx) => {
+  const { title, summary, type, receptionMode } = resp;
+
+  if (!title || !summary) {
+    const err = new Error(`Response at index ${idx} is missing required fields`);
+    err.statusCode = 400;
+    throw err;
+  }
+
+  return {
+    title: title.trim(),
+    summary: summary.trim(),
+    ref: resp.ref?.trim() || undefined,
+    resStatus: Boolean(resp.resStatus),
+    type: ["incoming", "outgoing"].includes(type) ? type : "outgoing",
+    receptionMode,
+    fileCategory: receptionMode === 'in-person' ? resp.fileCategory : undefined,
+    respondedAt: resp.respondedAt ? new Date(resp.respondedAt) : new Date(),
+  };
+});
+
     }
 
     const updatedDocument = await Document.findOneAndUpdate(

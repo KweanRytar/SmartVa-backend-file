@@ -31,10 +31,28 @@ export const normalizeDelegates = async (delegates) => {
       });
     } else {
       // External delegate (email only)
-      result.push({
-        name: email.split("@")[0],
-        email,
-      });
+      const username = email.split("@")[0];
+  let name = username;
+
+  // Make it look like a real name when possible
+  if (username.includes('.')) {
+    name = username
+      .split('.')
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ');
+  } else if (username.includes('-') || username.includes('_')) {
+    name = username
+      .split(/[-_]/)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ');
+  } else {
+    name = username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
+  }
+
+  result.push({
+    name: name || "External Delegate",
+    email,
+  });
     }
   }
 

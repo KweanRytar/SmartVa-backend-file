@@ -215,8 +215,19 @@ export const getAllEvents = async (req, res, next) => {
     const userId = new mongoose.Types.ObjectId(userIdRaw);
 
     const [events, total] = await Promise.all([
-      Event.find({ userId, startTime: { $gte: startDate }, endTime: { $lte: endDate } }).lean(),
+      // Event.find({ userId, startTime: { $gte: startDate }, endTime: { $lte: endDate } }).lean(),
+      // Event.countDocuments({ userId })
+Event.find({
+  userId,
+  $or: [
+    { startTime: { $gte: startDate, $lte: endDate } }, // starts in range
+    { endTime: { $gte: startDate, $lte: endDate } },   // ends in range
+    { startTime: { $lte: startDate }, endTime: { $gte: endDate } } // spans entire range
+  ]
+}).lean(),
       Event.countDocuments({ userId })
+
+
     ]);
 
     res.status(200).json({ message: "All events retrieved successfully", totalEvents: total, events });

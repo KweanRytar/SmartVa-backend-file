@@ -16,14 +16,14 @@ import { getIO } from "../socket.js";
  * Accepts req.user as either a string id or an object { _id, email, ... }
  */
 const getUserInfo = (req) => {
-  const userId = req.user.userId
-  if(!userId){
-  throw new Error("you are not authorized")}
-  return userId
- 
+  const userId = req.user.userId;
+  if (!userId) {
+    throw new Error("you are not authorized");
+  }
+  return userId;
 };
 
-const resend = new Resend(process.env.RESEND_API)
+const resend = new Resend(process.env.RESEND_API);
 
 /**
  * Create a task
@@ -64,7 +64,7 @@ export const createTask = async (req, res, next) => {
           subTasks.map(async (sub) => ({
             ...sub,
             delegate: await normalizeDelegates(sub.delegate),
-          }))
+          })),
         )
       : [];
 
@@ -90,7 +90,7 @@ export const createTask = async (req, res, next) => {
     };
 
     // ===============================
-    // 📧 EMAIL NOTIFICATIONS
+    // 📧 EMAIL NOTIFICATIONS TO DELEGATE WITHOUT SENDING IT TWICE TO SAME MAIL EVEN IF THEY APPEARED MULTIPLE TIMES IN THE TASK OR SUBTASK
     // ===============================
 
     await Promise.all(
@@ -103,12 +103,12 @@ export const createTask = async (req, res, next) => {
             title,
             description,
             dueDate,
-            assigneeName
+            assigneeName,
           );
         } catch (err) {
           console.error("Delegate email failed:", err.message);
         }
-      })
+      }),
     );
 
     await Promise.all(
@@ -122,13 +122,13 @@ export const createTask = async (req, res, next) => {
               sub.title,
               sub.description,
               sub.dueDate,
-              assigneeName
+              assigneeName,
             );
           } catch (err) {
             console.error("Subtask email failed:", err.message);
           }
-        })
-      )
+        }),
+      ),
     );
 
     // ===============================
@@ -137,7 +137,7 @@ export const createTask = async (req, res, next) => {
 
     const io = getIO();
     const notificationMessage = `You have been assigned a new task: "${title}" with due date ${new Date(
-      dueDate
+      dueDate,
     ).toLocaleDateString()}.`;
 
     await Promise.all(
@@ -152,7 +152,7 @@ export const createTask = async (req, res, next) => {
         io.to(d.userId.toString()).emit("new-notification", {
           message: notificationMessage,
         });
-      })
+      }),
     );
 
     // 🔔 IN-APP NOTIFICATIONS FOR SUBTASKS
@@ -161,7 +161,7 @@ export const createTask = async (req, res, next) => {
         return sub.delegate.map(async (d) => {
           if (!d.userId) return;
           const subtaskNotificationMessage = `You have been assigned a new subtask: "${sub.title}" with due date ${new Date(
-            sub.dueDate
+            sub.dueDate,
           ).toLocaleDateString()}.`;
           await Notification.create({
             userId: d.userId,
@@ -171,9 +171,8 @@ export const createTask = async (req, res, next) => {
             message: subtaskNotificationMessage,
           });
         });
-      })
-    )
-
+      }),
+    );
 
     // ===============================
     // ⏰ SCHEDULE REMINDER (AGENDA)
@@ -189,7 +188,7 @@ export const createTask = async (req, res, next) => {
         {
           userId,
           message: `Your task titled "${title}" will be due in two days.`,
-        }
+        },
       );
     }
 
@@ -207,7 +206,7 @@ export const createTask = async (req, res, next) => {
  */
 export const searchTasks = async (req, res, next) => {
   const { page = 1, limit = 10 } = req.query;
-  const userId  = getUserInfo(req); // ✅ extract properly
+  const userId = getUserInfo(req); // ✅ extract properly
   const { title } = req.params;
 
   try {
@@ -244,8 +243,6 @@ export const searchTasks = async (req, res, next) => {
 
     const total = await Task.countDocuments(query);
 
-    
-
     res.status(200).json({
       success: true,
       total,
@@ -257,8 +254,6 @@ export const searchTasks = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 /**
  * Get all tasks (owner or where delegate matches) with pagination
@@ -320,9 +315,8 @@ export const getTaskById = async (req, res, next) => {
       $or: [
         { userId },
         { "delegate.userId": userId },
-        
+
         { "subTasks.delegate.userId": userId },
-     
       ],
     });
 
@@ -330,7 +324,11 @@ export const getTaskById = async (req, res, next) => {
     if (task) {
       return res
         .status(200)
-        .json({ message: "Task retrieved successfully", isSubtask: false, task });
+        .json({
+          message: "Task retrieved successfully",
+          isSubtask: false,
+          task,
+        });
     }
 
     // 🟡 2. If not found, try finding as a subtask
@@ -339,9 +337,8 @@ export const getTaskById = async (req, res, next) => {
       $or: [
         { userId },
         { "delegate.userId": userId },
-     
+
         { "subTasks.delegate.userId": userId },
-        
       ],
     });
 
@@ -352,7 +349,9 @@ export const getTaskById = async (req, res, next) => {
     }
 
     // Extract the specific subtask
-    const subtask = parentTask.subTasks.find(st => st._id.toString() === taskId);
+    const subtask = parentTask.subTasks.find(
+      (st) => st._id.toString() === taskId,
+    );
 
     // ✅ Return subtask data separately
     return res.status(200).json({
@@ -361,7 +360,6 @@ export const getTaskById = async (req, res, next) => {
       parentTaskId: parentTask._id,
       subtask,
     });
-
   } catch (error) {
     return next(error);
   }
@@ -386,11 +384,13 @@ export const markTaskAsCompleted = async (req, res, next) => {
     // If it's the main task
     if (taskToUpdate._id.toString() === taskId) {
       if (taskToUpdate.status === "Completed") {
-        return res.status(200).json({ message: "Task is already completed", task: taskToUpdate });
+        return res
+          .status(200)
+          .json({ message: "Task is already completed", task: taskToUpdate });
       }
 
       taskToUpdate.status = "Completed";
-    } 
+    }
     // If it's a subtask
     else {
       const subTask = taskToUpdate.subTasks.id(taskId);
@@ -401,7 +401,12 @@ export const markTaskAsCompleted = async (req, res, next) => {
       }
 
       if (subTask.status === "Completed") {
-        return res.status(200).json({ message: "Subtask is already completed", task: taskToUpdate });
+        return res
+          .status(200)
+          .json({
+            message: "Subtask is already completed",
+            task: taskToUpdate,
+          });
       }
 
       subTask.status = "Completed";
@@ -418,10 +423,9 @@ export const markTaskAsCompleted = async (req, res, next) => {
   }
 };
 
-
 /**
  * Update task (owner only)
- */   
+ */
 
 export const updateTask = async (req, res, next) => {
   try {
@@ -439,7 +443,7 @@ export const updateTask = async (req, res, next) => {
       return next(err);
     }
 
-    const notificationMessage = `Task "${ oldTask.title}" has been updated. Please check the details.`;
+    const notificationMessage = `Task "${oldTask.title}" has been updated. Please check the details.`;
 
     // ===============================
     // 🔄 Update task
@@ -447,7 +451,7 @@ export const updateTask = async (req, res, next) => {
     const updatedTask = await Task.findOneAndUpdate(
       { _id: taskId, userId },
       { $set: updateData },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedTask) {
@@ -455,8 +459,6 @@ export const updateTask = async (req, res, next) => {
       err.statusCode = 400;
       return next(err);
     }
-
-
 
     // ===============================
     // 👤 Generate delegate display name
@@ -470,43 +472,47 @@ export const updateTask = async (req, res, next) => {
     };
 
     // ===============================
-    // 📧 Notify MAIN delegates (email)
+    // 📧 Prepare a unique list of emails
+    // ===============================
+    const emailSet = new Set();
+
+    // Collect main task delegates
+    updatedTask.delegate.forEach((d) => {
+      if (d.email) emailSet.add(d.email.toLowerCase());
+    });
+
+    // Collect subtask delegates
+    updatedTask.subTasks.forEach((sub) => {
+      sub.delegate.forEach((d) => {
+        if (d.email) emailSet.add(d.email.toLowerCase());
+      });
+    });
+
+    // ===============================
+    // 📧 Send emails
     // ===============================
     await Promise.all(
-      updatedTask.delegate.map(async (d) => {
-        if (!d.email) return;
-
+      Array.from(emailSet).map(async (email) => {
         try {
-          const delegateName = await generateDelegateName(d.email);
-          await sendUpdatedTaskEmail(d.email, delegateName, updatedTask);
+          const delegateName = await generateDelegateName(email);
+
+          // Determine if this email belongs to a subtask delegate
+          let subTask = null;
+          updatedTask.subTasks.forEach((sub) => {
+            if (sub.delegate.some((d) => d.email.toLowerCase() === email)) {
+              subTask = sub;
+            }
+          });
+
+          await sendUpdatedTaskEmail(
+            email,
+            delegateName,
+            subTask ? { ...updatedTask.toObject(), subTask } : updatedTask,
+          );
         } catch (err) {
-          console.error("Delegate update email failed:", err.message);
+          console.error("Email failed:", err.message);
         }
-      })
-    );
-
-    // ===============================
-    // 📧 Notify SUBTASK delegates (email)
-    // ===============================
-    await Promise.all(
-      updatedTask.subTasks.flatMap((sub) =>
-        sub.delegate.map(async (d) => {
-          if (!d.email) return;
-
-          // check if mail existed in main task delegates to avoid duplicate mails
-          if (updatedTask.delegate.some(mainD => mainD.email === d.email)) return;
-
-          try {
-            const delegateName = await generateDelegateName(d.email);
-            await sendUpdatedTaskEmail(d.email, delegateName, {
-              ...updatedTask.toObject(),
-              subTask: sub,
-            });
-          } catch (err) {
-            console.error("Subtask delegate email failed:", err.message);
-          }
-        })
-      )
+      }),
     );
 
     // ===============================
@@ -514,34 +520,24 @@ export const updateTask = async (req, res, next) => {
     // ===============================
     const io = getIO();
 
-    const notifyUser = async (email) => {
-      if (!email) return;
-
-      const user = await User.findOne({ email: email.toLowerCase() }).select("_id");
-      if (!user?._id) return;
-
-      await Notification.create({
-        userId: user._id,
-        message: notificationMessage,
-      });
-
-      io.to(user._id.toString()).emit("new-notification", {
-        message: notificationMessage,
-      });
-    };
-
-    // Notify main delegates
-    await Promise.all(updatedTask.delegate.map((d) => notifyUser(d.email)));
-
-    // Notify subtask delegates
     await Promise.all(
-      updatedTask.subTasks.flatMap((sub) => {
+      Array.from(emailSet).map(async (email) => {
+        if (!email) return;
 
-// check if user was already notified in main task delegates
-      if(updatedTask.delegate.some(mainD => mainD.email === sub.email)) return;
+        const user = await User.findOne({ email: email.toLowerCase() }).select(
+          "_id",
+        );
+        if (!user?._id) return;
 
-        sub.delegate.map((d) => notifyUser(d.email))
-   } )
+        await Notification.create({
+          userId: user._id,
+          message: notificationMessage,
+        });
+
+        io.to(user._id.toString()).emit("new-notification", {
+          message: notificationMessage,
+        });
+      }),
     );
 
     // ===============================
@@ -554,8 +550,8 @@ export const updateTask = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-};    
-  
+};
+
 /**
  * Delete task (owner only)
  */
@@ -607,20 +603,29 @@ export const getAllDelegates = async (req, res, next) => {
     const delegateMap = new Map();
     const today = new Date();
 
-    tasks.forEach(task => {
+    tasks.forEach((task) => {
       // function to update delegate info
       const processDelegate = (d, task) => {
         const email = d.email?.toLowerCase();
         if (!email) return;
 
-        const name = d.name || "Unknown";
+        const name = d.name || deriveNameFromEmail(d.email) || "No Name";
+
+        function deriveNameFromEmail(email) {
+          if (!email) return "";
+          const part = email.split("@")[0];
+          return part
+            .split(/[\._-]/)
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(" ");
+        }
 
         // Initialize delegate entry if not exists
         if (!delegateMap.has(email)) {
           delegateMap.set(email, {
             name,
             email,
-            phone: d.phone || "",
+
             taskCount: 0,
             pending: false,
             overdue: false,
@@ -638,7 +643,11 @@ export const getAllDelegates = async (req, res, next) => {
         }
 
         // Mark overdue if due date is past today and not completed
-        if (task.dueDate && new Date(task.dueDate) < today && task.status?.toLowerCase() !== "completed") {
+        if (
+          task.dueDate &&
+          new Date(task.dueDate) < today &&
+          task.status?.toLowerCase() !== "completed"
+        ) {
           delegateEntry.overdue = true;
         }
 
@@ -646,35 +655,44 @@ export const getAllDelegates = async (req, res, next) => {
       };
 
       // --- Main task delegates ---
-      task.delegate?.forEach(d => processDelegate(d, task));
+      task.delegate?.forEach((d) => {
+        console.log("Main delegate → name:", d.name, "email:", d.email);
+        processDelegate(d, task);
+      });
 
       // --- Subtask delegates ---
-      task.subTasks?.forEach(sub => {
-        sub.delegate?.forEach(d => processDelegate(d, sub));
+      task.subTasks?.forEach((sub) => {
+        console.log("Subtask delegate → name:", d.name, "email:", d.email);
+        sub.delegate?.forEach((d) => processDelegate(d, sub));
       });
     });
 
     const delegates = Array.from(delegateMap.values());
+
+    console.log(delegates);
 
     res.status(200).json({
       message: "Delegates fetched successfully",
       delegates,
     });
   } catch (err) {
-   next(err);
+    next(err);
   }
 };
-
-
-
 
 /**
  * Shared helper for filtered GET endpoints.
  * Signature: (filterObject, label, req, res, next)
  * It will merge userId into the filter if not already present.
  */
-const getTasksByFilter = async (filter = {}, label = "Tasks", req, res, next) => {
-  const userId = getUserInfo(req)
+const getTasksByFilter = async (
+  filter = {},
+  label = "Tasks",
+  req,
+  res,
+  next,
+) => {
+  const userId = getUserInfo(req);
   try {
     // If caller already supplied userId in filter, keep it; otherwise enforce owner
     const finalFilter = { ...filter };
@@ -684,7 +702,9 @@ const getTasksByFilter = async (filter = {}, label = "Tasks", req, res, next) =>
     }
 
     const tasks = await Task.find(finalFilter);
-    return res.status(200).json({ message: `${label} tasks retrieved successfully`, tasks });
+    return res
+      .status(200)
+      .json({ message: `${label} tasks retrieved successfully`, tasks });
   } catch (error) {
     return next(error);
   }
@@ -711,7 +731,13 @@ export const getOverdueTasks = (req, res, next) =>
 
 export const getTasksByPriority = (req, res, next) =>
   // Model field appears to be `priorites` — accept that
-  getTasksByFilter({ priorites: req.params.priority }, "Priority", req, res, next);
+  getTasksByFilter(
+    { priorites: req.params.priority },
+    "Priority",
+    req,
+    res,
+    next,
+  );
 
 export const getTasksByDelegate = (req, res, next) => {
   const delegateIdentifier = req.params.delegate;
@@ -719,8 +745,8 @@ export const getTasksByDelegate = (req, res, next) => {
   const filter = {
     $or: [
       { "delegate.name": delegateIdentifier },
-      { "delegate.email": delegateIdentifier }
-    ]
+      { "delegate.email": delegateIdentifier },
+    ],
   };
   return getTasksByFilter(filter, "Delegate", req, res, next);
 };
@@ -731,25 +757,28 @@ export const getEmergencyTasks = (req, res, next) =>
     {
       $and: [
         { priorites: "High" },
-        { dueDate: { $lt: new Date(Date.now() + 24 * 60 * 60 * 1000) } }
-      ]
+        { dueDate: { $lt: new Date(Date.now() + 24 * 60 * 60 * 1000) } },
+      ],
     },
     "Emergency",
-    req, res, next
+    req,
+    res,
+    next,
   );
 
 export const getTasksDueInNext72Hours = (req, res, next) =>
   getTasksByFilter(
     { dueDate: { $lte: new Date(Date.now() + 72 * 60 * 60 * 1000) } },
     "Due in the next 72 hours",
-    req, res, next
+    req,
+    res,
+    next,
   );
 
 /**
  * Delegates listing helper (returns distinct delegate entries for tasks filtered by owner)
  * Signature: (filter, label, req, res, next)
  */
-
 
 export const getDelegateDetails = async (req, res, next) => {
   try {
@@ -838,7 +867,9 @@ export const getDelegateDetails = async (req, res, next) => {
       // Combine all assignments
       {
         $project: {
-          assignments: { $concatArrays: ["$mainAssignments", "$subAssignments"] },
+          assignments: {
+            $concatArrays: ["$mainAssignments", "$subAssignments"],
+          },
         },
       },
 
@@ -861,13 +892,18 @@ export const getDelegateDetails = async (req, res, next) => {
     const assignments = results[0].allAssignments.flat();
 
     // Calculate totals
-    const totalPending = assignments.filter((a) => a.status === "Pending").length;
-    const totalCompleted = assignments.filter((a) => a.status === "Completed").length;
+    const totalPending = assignments.filter(
+      (a) => a.status === "Pending",
+    ).length;
+    const totalCompleted = assignments.filter(
+      (a) => a.status === "Completed",
+    ).length;
     const totalOverdue = assignments.filter(
-      (a) => new Date(a.dueDate) < now && a.status !== "Completed"
+      (a) => new Date(a.dueDate) < now && a.status !== "Completed",
     ).length;
 
-    const delegateName = assignments.find((a) => a.delegateName)?.delegateName || null;
+    const delegateName =
+      assignments.find((a) => a.delegateName)?.delegateName || null;
 
     res.status(200).json({
       delegateName,
@@ -883,8 +919,7 @@ export const getDelegateDetails = async (req, res, next) => {
   }
 };
 
-
-// get delegates by status 
+// get delegates by status
 
 const getDelegatesByStatus = async (filter, req, res, next) => {
   try {
@@ -939,18 +974,21 @@ export const getDelegatesWithCompletedTasks = (req, res, next) =>
 export const getDelegatesWithOverdueTasks = (req, res, next) =>
   getDelegatesByStatus({ dueDate: { $lt: new Date() } }, req, res, next);
 
-
 /**
  * Send email to delegate(s) — owner only
  */
 export const messageDelegate = async (req, res, next) => {
-
   console.log("messageDelegate route hit with body:", req.body); // ← log incoming request body for debugging
   try {
     const { delegateEmail, subject, message } = req.body;
     const userId = getUserInfo(req);
 
-    console.log("Message delegate request by user:", userId, "to:", delegateEmail);
+    console.log(
+      "Message delegate request by user:",
+      userId,
+      "to:",
+      delegateEmail,
+    );
 
     // 🔒 Validate input
     if (!delegateEmail || !subject || !message) {
@@ -974,10 +1012,7 @@ export const messageDelegate = async (req, res, next) => {
      */
     const delegateExists = await Task.exists({
       userId,
-      $or: [
-        { "delegate.email": email },
-        { "subTasks.delegate.email": email },
-      ],
+      $or: [{ "delegate.email": email }, { "subTasks.delegate.email": email }],
     });
 
     if (!delegateExists) {
@@ -986,10 +1021,8 @@ export const messageDelegate = async (req, res, next) => {
       });
     }
 
-    
-
     // ✉️ Send mail
-   const {data, error} = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: `SMARTVA <${process.env.EMAIL_FROM}>`,
       to: email,
       subject,
@@ -1009,29 +1042,29 @@ export const messageDelegate = async (req, res, next) => {
         </div>
       `,
     });
-   if (error) {
-  console.error("Resend send error:", error); // ← log full error!
+    if (error) {
+      console.error("Resend send error:", error); // ← log full error!
 
-  let errorMessage = "Failed to send email";
-  let status = 500;
+      let errorMessage = "Failed to send email";
+      let status = 500;
 
-  if (error.statusCode === 401 || error.statusCode === 403) {
-    errorMessage = "Email service authentication failed. Contact support.";
-    status = 503;
-  } else if (error.statusCode === 429) {
-    errorMessage = "Too many emails sent. Please try again later.";
-    status = 429;
-  } else if (error.message?.includes("from")) {
-    errorMessage = "Invalid sender address. Please check configuration.";
-  } else if (error.message) {
-    errorMessage = error.message; // expose safe parts only
-  }
+      if (error.statusCode === 401 || error.statusCode === 403) {
+        errorMessage = "Email service authentication failed. Contact support.";
+        status = 503;
+      } else if (error.statusCode === 429) {
+        errorMessage = "Too many emails sent. Please try again later.";
+        status = 429;
+      } else if (error.message?.includes("from")) {
+        errorMessage = "Invalid sender address. Please check configuration.";
+      } else if (error.message) {
+        errorMessage = error.message; // expose safe parts only
+      }
 
-  return res.status(status).json({ 
-    message: errorMessage,
-    // optional: errorCode: error.code or error.statusCode
-  });
-}
+      return res.status(status).json({
+        message: errorMessage,
+        // optional: errorCode: error.code or error.statusCode
+      });
+    }
     return res.status(200).json({
       success: true,
       message: "Message sent successfully",
@@ -1055,7 +1088,9 @@ export const messageSubtaskDelegate = async (req, res, next) => {
     // Find the task that contains the subtask and ensure owner is the authenticated user
     const task = await Task.findOne({ "subtasks._id": subtaskId, userId });
     if (!task) {
-      const err = new Error("You are not authorized to access this subtask or it does not exist.");
+      const err = new Error(
+        "You are not authorized to access this subtask or it does not exist.",
+      );
       err.statusCode = 403;
       return next(err);
     }
@@ -1067,7 +1102,11 @@ export const messageSubtaskDelegate = async (req, res, next) => {
       return next(err);
     }
 
-    if (!subtask.delegate || !Array.isArray(subtask.delegate) || subtask.delegate.length === 0) {
+    if (
+      !subtask.delegate ||
+      !Array.isArray(subtask.delegate) ||
+      subtask.delegate.length === 0
+    ) {
       const err = new Error("No delegates found for this subtask");
       err.statusCode = 404;
       return next(err);
@@ -1075,9 +1114,10 @@ export const messageSubtaskDelegate = async (req, res, next) => {
 
     let recipients = [];
     if (delegateName || delegateEmail) {
-      recipients = subtask.delegate.filter(d =>
-        (delegateName && d.name === delegateName) ||
-        (delegateEmail && d.email === delegateEmail)
+      recipients = subtask.delegate.filter(
+        (d) =>
+          (delegateName && d.name === delegateName) ||
+          (delegateEmail && d.email === delegateEmail),
       );
 
       if (recipients.length === 0) {
@@ -1089,14 +1129,12 @@ export const messageSubtaskDelegate = async (req, res, next) => {
       recipients = subtask.delegate;
     }
 
-   
-
     for (const delegate of recipients) {
-      const {data, error} = await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from: `SMARTVA <${process.env.EMAIL_FROM}>`,
         to: delegate.email,
         subject: "Subtask Reminder",
-        text: message
+        text: message,
       });
     }
 
@@ -1104,7 +1142,11 @@ export const messageSubtaskDelegate = async (req, res, next) => {
       throw new Error("Failed to send email to one or more delegates");
     }
 
-    return res.status(200).json({ message: `Message sent to ${recipients.length} subtask delegate(s) successfully` });
+    return res
+      .status(200)
+      .json({
+        message: `Message sent to ${recipients.length} subtask delegate(s) successfully`,
+      });
   } catch (error) {
     return next(error);
   }
@@ -1133,12 +1175,14 @@ export const delegateUpdateTaskStatus = async (req, res, next) => {
       return next(err);
     }
 
-    const isDelegate = Array.isArray(task.delegate) && task.delegate.some(d =>
-      (d.userId && d.userId.toString() === userId)
-    );
+    const isDelegate =
+      Array.isArray(task.delegate) &&
+      task.delegate.some((d) => d.userId && d.userId.toString() === userId);
 
     if (!isDelegate) {
-      const err = new Error("You are not authorized to update this task's status");
+      const err = new Error(
+        "You are not authorized to update this task's status",
+      );
       err.statusCode = 403;
       return next(err);
     }
@@ -1146,7 +1190,9 @@ export const delegateUpdateTaskStatus = async (req, res, next) => {
     task.status = status;
     await task.save();
 
-    return res.status(200).json({ message: "Task status updated successfully", task });
+    return res
+      .status(200)
+      .json({ message: "Task status updated successfully", task });
   } catch (error) {
     return next(error);
   }
@@ -1162,7 +1208,7 @@ export const delegateUpdateSubtaskStatus = async (req, res, next) => {
   const { userId } = getUserInfo(req);
 
   // Validation
-  if(!userId) {
+  if (!userId) {
     const err = new Error("Unauthorized: No user ID found");
     err.statusCode = 401;
     return next(err);
@@ -1190,12 +1236,14 @@ export const delegateUpdateSubtaskStatus = async (req, res, next) => {
       return next(err);
     }
 
-    const isDelegate = Array.isArray(subtask.delegate) && subtask.delegate.some(d =>
-      (d.userId && d.userId.toString() === userId)
-    );
+    const isDelegate =
+      Array.isArray(subtask.delegate) &&
+      subtask.delegate.some((d) => d.userId && d.userId.toString() === userId);
 
     if (!isDelegate) {
-      const err = new Error("You are not authorized to update this subtask's status");
+      const err = new Error(
+        "You are not authorized to update this subtask's status",
+      );
       err.statusCode = 403;
       return next(err);
     }
@@ -1203,7 +1251,9 @@ export const delegateUpdateSubtaskStatus = async (req, res, next) => {
     subtask.status = status;
     await task.save();
 
-    return res.status(200).json({ message: "Subtask status updated successfully", subtask });
+    return res
+      .status(200)
+      .json({ message: "Subtask status updated successfully", subtask });
   } catch (error) {
     return next(error);
   }
@@ -1219,45 +1269,51 @@ export const getSubtasksForDelegate = async (req, res, next) => {
     const tasks = await Task.find({
       $or: [
         { "subtasks.delegate.userId": userId },
-        { "subtasks.delegate.email": userEmail }
-      ]
+        { "subtasks.delegate.email": userEmail },
+      ],
     });
 
     const result = [];
     for (const task of tasks) {
-      const matchingSubtasks = task.subtasks.filter(subtask =>
-        Array.isArray(subtask.delegate) &&
-        subtask.delegate.some(d =>
-          (d.userId && d.userId.toString() === userId) ||
-          (d.email && d.email === userEmail)
-        )
+      const matchingSubtasks = task.subtasks.filter(
+        (subtask) =>
+          Array.isArray(subtask.delegate) &&
+          subtask.delegate.some(
+            (d) =>
+              (d.userId && d.userId.toString() === userId) ||
+              (d.email && d.email === userEmail),
+          ),
       );
 
       if (matchingSubtasks.length > 0) {
         result.push({
           taskId: task._id,
           taskTitle: task.title,
-          subtasks: matchingSubtasks
+          subtasks: matchingSubtasks,
         });
       }
     }
 
-    return res.status(200).json({ message: "Subtasks for delegate retrieved successfully", data: result });
+    return res
+      .status(200)
+      .json({
+        message: "Subtasks for delegate retrieved successfully",
+        data: result,
+      });
   } catch (error) {
     return next(error);
   }
 };
 
-
 // get all delegates tasks
 export const getAllDelegatesTasks = async (req, res, next) => {
-  const  userId  = getUserInfo(req);
+  const userId = getUserInfo(req);
   const delegateEmail = req.params.delegateEmail;
 
   try {
     const delegateTasks = await Task.find({
-      delegate: { $elemMatch: { email: delegateEmail } }
-    })
+      delegate: { $elemMatch: { email: delegateEmail } },
+    });
 
     if (!delegateTasks || delegateTasks.length === 0) {
       const err = new Error("No tasks found for the specified delegate email");
@@ -1265,10 +1321,17 @@ export const getAllDelegatesTasks = async (req, res, next) => {
       return next(err);
     }
 
-const totalTasks = delegateTasks.length;
-const pendingTasks = delegateTasks.filter(task => task.status === 'Pending');
-const completedTasks = delegateTasks.filter(task => task.status === 'Completed');
-const overdueTasks = delegateTasks.filter(task => new Date(task.dueDate) < new Date() && task.status !== 'Completed');
+    const totalTasks = delegateTasks.length;
+    const pendingTasks = delegateTasks.filter(
+      (task) => task.status === "Pending",
+    );
+    const completedTasks = delegateTasks.filter(
+      (task) => task.status === "Completed",
+    );
+    const overdueTasks = delegateTasks.filter(
+      (task) =>
+        new Date(task.dueDate) < new Date() && task.status !== "Completed",
+    );
 
     return res.status(200).json({
       message: "Delegate tasks retrieved successfully",
@@ -1279,12 +1342,10 @@ const overdueTasks = delegateTasks.filter(task => new Date(task.dueDate) < new D
       completedTasksCount: completedTasks.length,
       completedTasks,
       overdueTasksCount: overdueTasks.length,
-      overdueTasks
-    })
-
+      overdueTasks,
+    });
   } catch (error) {
     console.error("Error retrieving delegate tasks:", error);
     return next(error);
   }
-
-}
+};

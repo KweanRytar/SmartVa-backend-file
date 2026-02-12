@@ -46,7 +46,7 @@ export const sendMailToConcernedMembers = async (
   }
 
   const {data, error} = await resend.emails.send({
-    from: `"SmartVA" <${process.env.emailA}>`,
+    from: `"SmartVA" <${process.env.EMAIL_FROM}>`,
     to: email,
     subject: `You’ve been added to an event: ${title}`,
     html: `
