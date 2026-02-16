@@ -594,82 +594,77 @@ export const deleteTask = async (req, res, next) => {
 };
 
 // get all unique delegates across all tasks for the authenticated user
-export const getAllDelegates = async (req, res, next) => {
+export const getAllDelegates = async (req, res, next) => { 
   const userId = getUserInfo(req);
 
   try {
     const tasks = await Task.find({ userId }).lean();
-
     const delegateMap = new Map();
     const today = new Date();
 
+    // ------------------------------
+    // Helper function to safely derive a name
+    // ------------------------------
+    const deriveNameFromEmail = (email) => {
+      if (!email) return "";
+      const part = email.split("@")[0];
+      return part
+        .split(/[\._-]/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
+    };
+
+    // ------------------------------
+    // Function to process a delegate safely
+    // ------------------------------
+    const processDelegate = (delegate, task) => {
+      if (!delegate || !delegate.email) return;
+
+      const email = delegate.email.toLowerCase();
+      const name = delegate.name || deriveNameFromEmail(delegate.email) || "No Name";
+
+      // Initialize if not exists
+      if (!delegateMap.has(email)) {
+        delegateMap.set(email, {
+          name,
+          email,
+          taskCount: 0,
+          pending: false,
+          overdue: false,
+        });
+      }
+
+      const entry = delegateMap.get(email);
+
+      // Update counts and status flags
+      entry.taskCount += 1;
+      if (task.status?.toLowerCase() === "pending") entry.pending = true;
+      if (task.dueDate && new Date(task.dueDate) < today && task.status?.toLowerCase() !== "completed") {
+        entry.overdue = true;
+      }
+
+      delegateMap.set(email, entry);
+    };
+
+    // ------------------------------
+    // Iterate tasks
+    // ------------------------------
     tasks.forEach((task) => {
-      // function to update delegate info
-      const processDelegate = (d, task) => {
-        const email = d.email?.toLowerCase();
-        if (!email) return;
-
-        const name = d.name || deriveNameFromEmail(d.email) || "No Name";
-
-        function deriveNameFromEmail(email) {
-          if (!email) return "";
-          const part = email.split("@")[0];
-          return part
-            .split(/[\._-]/)
-            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-            .join(" ");
-        }
-
-        // Initialize delegate entry if not exists
-        if (!delegateMap.has(email)) {
-          delegateMap.set(email, {
-            name,
-            email,
-
-            taskCount: 0,
-            pending: false,
-            overdue: false,
-          });
-        }
-
-        const delegateEntry = delegateMap.get(email);
-
-        // Increment task count
-        delegateEntry.taskCount += 1;
-
-        // Mark pending if any of the tasks is pending
-        if (task.status?.toLowerCase() === "pending") {
-          delegateEntry.pending = true;
-        }
-
-        // Mark overdue if due date is past today and not completed
-        if (
-          task.dueDate &&
-          new Date(task.dueDate) < today &&
-          task.status?.toLowerCase() !== "completed"
-        ) {
-          delegateEntry.overdue = true;
-        }
-
-        delegateMap.set(email, delegateEntry);
-      };
-
-      // --- Main task delegates ---
-      task.delegate?.forEach((d) => {
-        console.log("Main delegate → name:", d.name, "email:", d.email);
-        processDelegate(d, task);
+      // Main task delegates
+      (task.delegate || []).forEach((delegateItem) => {
+        processDelegate(delegateItem, task);
       });
 
-      // --- Subtask delegates ---
-      task.subTasks?.forEach((sub) => {
-        console.log("Subtask delegate → name:", d.name, "email:", d.email);
-        sub.delegate?.forEach((d) => processDelegate(d, sub));
+      // Subtasks delegates
+      (task.subTasks || []).forEach((subTask) => {
+        (subTask.delegate || []).forEach((delegateItem) => {
+          processDelegate(delegateItem, subTask);
+        });
       });
     });
 
+    // Convert map to array for response
     const delegates = Array.from(delegateMap.values());
-
-    console.log(delegates);
 
     res.status(200).json({
       message: "Delegates fetched successfully",
@@ -679,6 +674,7 @@ export const getAllDelegates = async (req, res, next) => {
     next(err);
   }
 };
+
 
 /**
  * Shared helper for filtered GET endpoints.
