@@ -259,6 +259,14 @@ export const updateDocument = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.userId;
+    const dataToUpdate = req.body;
+
+    console.log('Update data:', dataToUpdate, 'Document ID:', id);
+
+    if(!dataToUpdate){
+      return res.status(400).json({ message: "Request body is missing" });
+    }
+
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid document ID" });
@@ -279,7 +287,7 @@ export const updateDocument = async (req, res, next) => {
       fileCategory,
       responseStatus,
       responses = [],
-    } = req.body;
+    } = dataToUpdate;
 
     if (!title || !description || !sender || !type) {
       return res.status(400).json({
