@@ -111,7 +111,7 @@ const documentSchema = new mongoose.Schema(
    responses: {
       type: [responseSchema],
       required: function () {
-        return this.responseStatus !== "not_required" || (this.responseStatus === "responded" );
+        return  this.responseStatus === "responded";
       }
    },
 

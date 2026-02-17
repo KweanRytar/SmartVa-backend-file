@@ -259,6 +259,11 @@ export const updateDocument = async (req, res, next) => {
   try {
     const { id } = req.params;
     const userId = req.user.userId;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid document ID" });
+    }
+
     const {
       title,
       description,
@@ -266,84 +271,85 @@ export const updateDocument = async (req, res, next) => {
       sender,
       ref,
       type,
-      receptionMode, 
+      receptionMode,
       fileCategory,
-      
       responseStatus,
       responses = [],
-      
-     
     } = req.body;
-console.log(req.body)
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      const err = new Error("Invalid document ID");
-      err.statusCode = 400;
-      throw err;
-    }
-
-    // Conditional validation
-    if (receptionMode === "in-person" && !fileCategory) {
-      const err = new Error("fileCategory is required when receptionMode is in-person");
-      err.statusCode = 400;
-      throw err;
-    }
 
     if (!title || !description || !sender || !type) {
-      const err = new Error("Title, description, sender, and type are required");
-      err.statusCode = 400;
-      throw err;
+      return res.status(400).json({
+        message: "Title, description, sender, and type are required",
+      });
     }
 
-    // Validate responses if responseStatus is 'responded'
+    if (receptionMode === "in-person" && !fileCategory) {
+      return res.status(400).json({
+        message: "fileCategory is required when receptionMode is in-person",
+      });
+    }
+
     let validResponses = [];
+
     if (responseStatus === "responded") {
-      // Correct fileCategory handling per response
-validResponses = responses.map((resp, idx) => {
-  const { title, summary, type, receptionMode } = resp;
+      if (!responses.length) {
+        return res.status(400).json({
+          message: "Responses are required when status is responded",
+        });
+      }
 
-  if (!title || !summary) {
-    const err = new Error(`Response at index ${idx} is missing required fields`);
-    err.statusCode = 400;
-    throw err;
-  }
+      validResponses = responses.map((resp, idx) => {
+        if (!resp.title || !resp.summary) {
+          throw new Error(
+            `Response at index ${idx} missing title or summary`
+          );
+        }
 
-  return {
-    title: title.trim(),
-    summary: summary.trim(),
-    ref: resp.ref?.trim() || undefined,
-    resStatus: Boolean(resp.resStatus),
-    type: ["incoming", "outgoing"].includes(type) ? type : "outgoing",
-    receptionMode,
-    fileCategory: receptionMode === 'in-person' ? resp.fileCategory : undefined,
-    respondedAt: resp.respondedAt ? new Date(resp.respondedAt) : new Date(),
-  };
-});
+        return {
+          title: resp.title.trim(),
+          summary: resp.summary.trim(),
+          ref: resp.ref?.trim(),
+          resStatus: Boolean(resp.resStatus),
+          receptionMode: resp.receptionMode,
+          fileCategory:
+            resp.receptionMode === "in-person"
+              ? resp.fileCategory
+              : undefined,
+          type: resp.type,
+          respondedAt: resp.respondedAt
+            ? new Date(resp.respondedAt)
+            : new Date(),
+        };
+      });
+    }
 
+    const updateData = {
+      title,
+      description,
+      category,
+      sender,
+      ref,
+      type,
+      receptionMode,
+      responseStatus,
+      responses:
+        responseStatus === "responded" ? validResponses : [],
+    };
+
+    if (receptionMode === "in-person") {
+      updateData.fileCategory = fileCategory;
     }
 
     const updatedDocument = await Document.findOneAndUpdate(
       { _id: id, userId },
-      {
-        $set: {
-          title,
-          description,
-          category,
-          sender,
-          ref,
-          type,
-          receptionMode,
-          fileCategory: receptionMode === "in-person" ? fileCategory : undefined,
-          responseStatus,
-          responses: validResponses,
-        },
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
     if (!updatedDocument) {
-      const err = new Error("Document not found or not authorized");
-      err.statusCode = 404;
-      throw err;
+      return res.status(404).json({
+        message: "Document not found or not authorized",
+      });
     }
 
     res.status(200).json({
@@ -354,6 +360,7 @@ validResponses = responses.map((resp, idx) => {
     next(error);
   }
 };
+
 
 /**
  * =========================
