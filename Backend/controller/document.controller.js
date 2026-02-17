@@ -262,6 +262,12 @@ export const updateDocument = async (req, res, next) => {
     const dataToUpdate = req.body;
 
     console.log('Update data:', dataToUpdate, 'Document ID:', id);
+     console.log('→ Incoming PUT /document/update/:id');
+  console.log('Params:', req.params);
+  console.log('Headers Content-Type:', req.get('Content-Type'));
+  console.log('Raw body (before parsing):', req.body);           // should be object or undefined
+  console.log('Has body?', !!req.body);
+
 
     if(!dataToUpdate){
       return res.status(400).json({ message: "Request body is missing" });
