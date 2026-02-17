@@ -264,6 +264,10 @@ export const updateDocument = async (req, res, next) => {
       return res.status(400).json({ message: "Invalid document ID" });
     }
 
+    if (!req.body) {
+  return res.status(400).json({ message: "Request body is missing" });
+}
+
     const {
       title,
       description,
@@ -331,6 +335,7 @@ export const updateDocument = async (req, res, next) => {
       ref,
       type,
       receptionMode,
+      fileCategory,
       responseStatus,
       responses:
         responseStatus === "responded" ? validResponses : [],
