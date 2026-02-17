@@ -7,7 +7,7 @@ routes.get('/getAllDocuments', authenticate, getAllDocuments); // handles GET /d
 routes.get('/:id', authenticate, getDocumentById); // handles GET /document/:id
 routes.post('/', authenticate, createDocument); // handles POST /document
 routes.post('/response/:id', authenticate, addDocumentResponse); // handles POST /document/response/:id
-routes.put('/:id', authenticate, updateDocument); // handles PUT /document/:id
+routes.put('/update/:id', authenticate, updateDocument); // handles PUT /document/:id
 routes.delete('/:id', authenticate, deleteDocument); // handles DELETE /document/:id
 
 
