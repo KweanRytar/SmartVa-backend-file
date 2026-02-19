@@ -359,22 +359,33 @@ export const getEventByName = async (req, res, next) => {
 };
 
 // Get today's events
-export const getEventFortheDay = async (req, res, next) => {
+export const getEventForTheDay = async (req, res, next) => {
   try {
     const userId = req.user.userId;
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+
+    // Get start of today (00:00:00)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get start of tomorrow (used as exclusive upper bound)
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
 
     const events = await Event.find({
       userId,
       $or: [
+        // Starts today
         { startTime: { $gte: today, $lt: tomorrow } },
-        { endTime: { $gte: today, $lt: tomorrow } },
-        { startTime: { $lt: today }, endTime: { $gt: tomorrow } }
+        
+        // Ends today
+        { endTime:   { $gte: today, $lt: tomorrow } }
       ]
     }).lean();
 
-    res.status(200).json({ message: "Today's events retrieved successfully", events });
+    res.status(200).json({
+      message: "Events starting or ending today retrieved successfully",
+      events
+    });
   } catch (error) {
     next(error);
   }
