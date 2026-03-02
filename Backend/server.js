@@ -26,11 +26,14 @@ import taskRoutes from "./routes/task.routes.js";
 import visitorRoutes from "./routes/visitors.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import noteRoutes from "./routes/notes.routes.js";
+import GMGRRoutes from "./routes/GMGR.routes.js";
 
 // Background jobs & services
 import { sendEmail, sendNotifications } from "./controller/sendEmailReminder.js";
 import { agenda } from "./controller/event.controller.js";
 import deleteExpiredEvents from "./controller/deletedExpiredEvent.js";
+import { generalReminder } from "./controller/sendEmailReminder.js";
+
 
 // ================================================
 //                Initialize App
@@ -48,6 +51,7 @@ initSocket(server);
 sendEmail();
 sendNotifications();
 deleteExpiredEvents();
+generalReminder();
 agenda.start();
 
 // ================================================
@@ -86,6 +90,7 @@ app.use("/visitors", visitorRoutes);
 app.use("/user", userRoutes);
 app.use("/notes", noteRoutes);
 app.use("/profile", profileRoutes);
+app.use("/general", GMGRRoutes)
 
 // Error handling (last)
 app.use(errorHandler);

@@ -18,6 +18,52 @@ const formatDate = (date) =>
     hour: '2-digit',
     minute: '2-digit'
   });
+// general reminder job
+export const generalReminder = () => {
+  agenda.define('general reminder', async (job) => {
+    try {
+      // Ensure job data exists
+      const jobData = job.attrs?.data;
+      if (!jobData) throw new Error('Job data is missing');
+
+      const { userId, reason, senderEmail, receiverEmail, receiverName } = jobData;
+
+      if (!userId || !reason || !senderEmail || !receiverEmail) {
+        throw new Error('Missing required fields in job data');
+      }
+
+      // Send email and validate provider response
+      const { data, error } = await resend.emails.send({
+        from: `${senderEmail} <${process.env.EMAIL_FROM}>`,
+        to: receiverEmail,
+        subject: `Reminder: ${reason}`,
+        html: `
+          <div style="background-color:#f9f9f9;padding:30px;font-family:Arial,sans-serif;color:#333;line-height:1.6;border-radius:8px;max-width:600px;margin:auto;border-left:6px solid #4CAF50;">
+            <h2 style="color:#4CAF50;margin-bottom:20px;">Reminder</h2>
+            <p>Dear ${receiverName},</p>
+            <p style="padding:15px;background-color:#fff;border-radius:6px;border:1px solid #ddd;font-size:16px;line-height:1.8;">
+              ${reason}
+            </p>
+            <p>Best regards,<br/><strong>SmartVA Team</strong></p>
+          </div>
+        `,
+      });
+
+      if (error) {
+        throw new Error(`Resend API error: ${error.message}`);
+      }
+
+      console.log(`Reminder email sent to ${receiverEmail}`);
+      return `Reminder email sent to ${receiverEmail}`;
+    } catch (error) {
+      console.error('Failed to send reminder email:', error);
+      throw new Error(`Failed to send reminder email: ${error.message}`);
+    }
+  });
+};
+
+
+
 
 // =========================
 // Notification Job
