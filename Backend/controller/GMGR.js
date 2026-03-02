@@ -4,6 +4,9 @@ import { User } from "../model/user.model.js";
 
 const resend = new Resend(process.env.RESEND_API);
 
+/* ===============================
+   SEND GENERAL MESSAGE
+================================ */
 export const GeneralMessage = async (req, res, next) => {
   try {
     const userId = req.user?.userId;
@@ -12,25 +15,26 @@ export const GeneralMessage = async (req, res, next) => {
       return res.status(401).json({ message: "Not authorized" });
     }
 
-    // extract sender email using userid
-    const senderName = await User.findById(userId).select("userName");
-    if (!senderName) {
-      return res.status(404).json({ message: "Sender email not found" });
+    // Fetch sender from DB
+    const user = await User.findById(userId).select("fullName");
+
+    if (!user) {
+      return res.status(404).json({ message: "Sender not found" });
     }
 
-  
+    const senderName = user.fullName;
 
-    const {  message, email, title } = req.body;
+    const { message, email, title } = req.body;
 
-    if ( !message || !email || !title) {
+    if (!message || !email || !title) {
       return res
         .status(400)
         .json({ message: "Please provide all required details" });
     }
 
-    // Send Email
-await resend.emails.send({
-      from: `${senderName} <${process.env.EMAIL_FROM}>`, // dynamic sender
+    // Send Email using Resend
+    await resend.emails.send({
+      from: `${senderName} <${process.env.EMAIL_FROM}>`,
       to: email,
       subject: title,
       html: `
@@ -44,7 +48,7 @@ await resend.emails.send({
 
           <div style="margin-top:30px;">
             <p>Best regards,</p>
-            <strong>SmartVA Team</strong>
+            <strong>${senderName}</strong>
           </div>
 
         </div>
@@ -53,61 +57,65 @@ await resend.emails.send({
 
     console.log("Message sent successfully");
 
-    if (error) {
-      return res.status(500).json({ message: "Email failed", error });
-    }
-
     return res.status(200).json({
       message: "Message sent successfully",
-      
     });
   } catch (error) {
+    console.error("Error sending message:", error);
     next(error);
   }
 };
 
-// function to send email reminderex
-export const GeneralReminder = async (req, res, next) =>{
-try {
-  // get userid from request
-const userId = req.user.userId;
+/* ===============================
+   SEND GENERAL REMINDER
+================================ */
+export const GeneralReminder = async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
 
-if (!userId) {
-  return res.status(401).json({ message: "Not authorized" });
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized" });
+    }
 
+    // Fetch sender from DB
+    const user = await User.findById(userId).select("fullName");
 
-}
+    if (!user) {
+      return res.status(404).json({ message: "Sender not found" });
+    }
 
-// extract sender email using userid
-const senderName = await User.findById(userId).select("userName");
-console.log("Sender name:", senderName);
+    const senderName = user.fullName;
 
-if (!senderName) {
-  return res.status(404).json({ message: "Sender email not found" });
-}
+    const { reason, time, receiverEmail, receiverName } = req.body;
 
-const {reason, time,  receiverEmail, receiverName} = req.body;
+    if (!reason || !time || !receiverEmail) {
+      return res.status(400).json({
+        message: "Please provide all required details",
+      });
+    }
 
-if (!reason || !time || !receiverEmail) {
-  return res.status(400).json({ message: "Please provide all required details" });
-}
+    // Convert time safely to Date object
+    const scheduledTime = new Date(time);
 
-// schedule reminder with agenda
-await agenda.schedule(time, "general reminder", {
+    if (isNaN(scheduledTime.getTime())) {
+      return res.status(400).json({ message: "Invalid date format" });
+    }
 
-  reason,
-  senderName,
-  receiverEmail,
-  receiverName
+    // Schedule reminder with Agenda
+    await agenda.schedule(scheduledTime, "general reminder", {
+      reason,
+      senderName,
+      receiverEmail,
+      receiverName,
+    });
 
-});
+    console.log("Reminder scheduled successfully");
 
-console.log("Reminder scheduled successfully");
-
-return res.status(200).json({ message: "Reminder scheduled successfully" });
-
-} catch (error) {
-  next(error);
-}
-
-}
+    return res
+      .status(200)
+      .json({ message: "Reminder scheduled successfully" });
+  } catch (error) {
+    console.error("Error scheduling reminder:", error);
+    next(error);
+  }
+};

@@ -28,6 +28,8 @@ export const generalReminder = () => {
 
       const {  reason, senderName, receiverEmail, receiverName } = jobData;
 
+      console.log(senderName)
+
       if ( !reason || !senderName || !receiverEmail) {
         throw new Error('Missing required fields in job data');
       }
