@@ -38,17 +38,24 @@ export const GeneralMessage = async (req, res, next) => {
       to: email,
       subject: title,
       html: `
-        <div style="background-color:#f9f9f9;padding:30px;font-family:Arial,sans-serif;color:#333;line-height:1.6;border-radius:8px;max-width:600px;margin:auto;border-left:6px solid #4CAF50;">
+           <div style="background-color:#f9f9f9;padding:30px;font-family:Arial,sans-serif;color:#333;line-height:1.6;border-radius:8px;max-width:600px;margin:auto;border-left:6px solid #4CAF50;">
           
-          <h2 style="color:#4CAF50;margin-bottom:20px;">${title}</h2>
+          <h2 style="color:#4CAF50;margin-bottom:20px;">✉️ ${title}</h2>
           
-          <p style="padding:15px;background-color:#fff;border-radius:6px;border:1px solid #ddd;font-size:16px;line-height:1.8;margin-bottom:20px;">
-            ${message} from ${senderName}
-          </p>
-
+          <p style="font-size:16px;margin-bottom:20px;">Hello,</p>
+          
+          <div style="background-color:#fff;padding:20px;border-radius:8px;border:1px solid #ddd;margin-bottom:25px;">
+            <p style="font-size:16px;line-height:1.8;margin:0;color:#333;white-space:pre-wrap;">
+${message}
+            </p>
+          </div>
+          
+          <hr style="border:none;border-top:1px solid #e0e0e0;margin:30px 0;">
+          
           <div style="margin-top:30px;">
-            <p>Best regards,</p>
-            <strong></strong>
+            <p style="margin-bottom:5px;">Best regards,</p>
+            <p style="margin:0;"><strong>${senderName}</strong></p>
+            <p style="margin:5px 0 0 0;font-size:13px;color:#888;">via SmartVA</p>
           </div>
 
         </div>

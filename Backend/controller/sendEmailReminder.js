@@ -34,18 +34,42 @@ export const generalReminder = () => {
         from: `${senderName} <${process.env.EMAIL_FROM}>`,
         to: receiverEmail,
         subject: `Reminder: ${reason}`,
-        html: `...your HTML...`,
+        html: `
+         <div style="background-color:#f9f9f9;padding:30px;font-family:Arial,sans-serif;color:#333;line-height:1.6;border-radius:8px;max-width:600px;margin:auto;border-left:6px solid #4CAF50;">
+            <h2 style="color:#4CAF50;margin-bottom:20px;">📌 Reminder</h2>
+            
+            <p style="font-size:16px;margin-bottom:10px;">Dear <strong>${receiverName || 'there'}</strong>,</p>
+            
+            <p style="margin-bottom:20px;">This is a friendly reminder from <strong>${senderName}</strong>:</p>
+            
+            <div style="background-color:#fff;padding:20px;border-radius:8px;border:1px solid #ddd;margin-bottom:25px;">
+              <p style="font-size:16px;line-height:1.8;margin:0;color:#333;">
+                ${reason}
+              </p>
+            </div>
+            
+            <p style="margin-top:10px;font-size:14px;color:#666;">
+              Please take necessary action at your earliest convenience.
+            </p>
+            
+            <hr style="border:none;border-top:1px solid #e0e0e0;margin:30px 0;">
+            
+            <p style="margin-top:30px;margin-bottom:5px;">Best regards,</p>
+            <p style="margin:0;"><strong>${senderName}</strong></p>
+            <p style="margin:5px 0 0 0;font-size:13px;color:#888;">via SmartVA</p>
+          </div>
+        `,
       });
 
       if (error) {
-        console.error('❌ RESEND ERROR:', error);
+        console.error(' RESEND ERROR:', error);
         throw new Error(`Resend API error: ${error.message}`);
       }
 
-      console.log('✅ EMAIL SENT SUCCESSFULLY');
+      console.log(' EMAIL SENT SUCCESSFULLY');
       return `Reminder email sent to ${receiverEmail}`;
     } catch (error) {
-      console.error('❌ JOB FAILED:', error.message);
+      console.error('JOB FAILED:', error.message);
       throw error;
     }
   });
