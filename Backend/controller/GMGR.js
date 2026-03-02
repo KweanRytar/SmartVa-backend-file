@@ -34,7 +34,7 @@ export const GeneralMessage = async (req, res, next) => {
 
     // Send Email using Resend
     await resend.emails.send({
-      from: `${senderName} <${process.env.EMAIL_FROM}>`,
+      from: `Smartva <${process.env.EMAIL_FROM}>`,
       to: email,
       subject: title,
       html: `
@@ -43,12 +43,12 @@ export const GeneralMessage = async (req, res, next) => {
           <h2 style="color:#4CAF50;margin-bottom:20px;">${title}</h2>
           
           <p style="padding:15px;background-color:#fff;border-radius:6px;border:1px solid #ddd;font-size:16px;line-height:1.8;margin-bottom:20px;">
-            ${message}
+            ${message} from ${senderName}
           </p>
 
           <div style="margin-top:30px;">
             <p>Best regards,</p>
-            <strong>${senderName}</strong>
+            <strong></strong>
           </div>
 
         </div>

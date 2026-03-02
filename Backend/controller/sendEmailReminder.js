@@ -21,45 +21,32 @@ const formatDate = (date) =>
 // general reminder job
 export const generalReminder = () => {
   agenda.define('general reminder', async (job) => {
+    console.log('🔔 ===== GENERAL REMINDER TRIGGERED =====');
+    console.log('Job Data:', JSON.stringify(job.attrs.data, null, 2));
+    
     try {
-      // Ensure job data exists
       const jobData = job.attrs?.data;
-      if (!jobData) throw new Error('Job data is missing');
+      const { reason, senderName, receiverEmail, receiverName } = jobData;
 
-      const {  reason, senderName, receiverEmail, receiverName } = jobData;
+      console.log('Sending email to:', receiverEmail);
 
-      console.log(senderName)
-
-      if ( !reason || !senderName || !receiverEmail) {
-        throw new Error('Missing required fields in job data');
-      }
-
-      // Send email and validate provider response
       const { data, error } = await resend.emails.send({
         from: `${senderName} <${process.env.EMAIL_FROM}>`,
         to: receiverEmail,
         subject: `Reminder: ${reason}`,
-        html: `
-          <div style="background-color:#f9f9f9;padding:30px;font-family:Arial,sans-serif;color:#333;line-height:1.6;border-radius:8px;max-width:600px;margin:auto;border-left:6px solid #4CAF50;">
-            <h2 style="color:#4CAF50;margin-bottom:20px;">Reminder</h2>
-            <p>Dear ${receiverName},</p>
-            <p style="padding:15px;background-color:#fff;border-radius:6px;border:1px solid #ddd;font-size:16px;line-height:1.8;">
-             please this is a reminder in regards to ${reason} 
-            </p>
-            <p>Best regards,<br/><strong>SmartVA Team</strong></p>
-          </div>
-        `,
+        html: `...your HTML...`,
       });
 
       if (error) {
+        console.error('❌ RESEND ERROR:', error);
         throw new Error(`Resend API error: ${error.message}`);
       }
 
-      console.log(`Reminder email sent to ${receiverEmail}`);
+      console.log('✅ EMAIL SENT SUCCESSFULLY');
       return `Reminder email sent to ${receiverEmail}`;
     } catch (error) {
-      console.error('Failed to send reminder email:', error);
-      throw new Error(`Failed to send reminder email: ${error.message}`);
+      console.error('❌ JOB FAILED:', error.message);
+      throw error;
     }
   });
 };
