@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { agenda } from "./event.controller.js";
+import { User } from "../model/user.model.js";
 
 const resend = new Resend(process.env.RESEND_API);
 
