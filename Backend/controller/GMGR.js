@@ -12,8 +12,8 @@ export const GeneralMessage = async (req, res, next) => {
     }
 
     // extract sender email using userid
-    const senderEmail = await User.findById(userId).select("email");
-    if (!senderEmail) {
+    const senderName = await User.findById(userId).select("userName");
+    if (!senderName) {
       return res.status(404).json({ message: "Sender email not found" });
     }
 
@@ -29,7 +29,7 @@ export const GeneralMessage = async (req, res, next) => {
 
     // Send Email
 await resend.emails.send({
-      from: `${sender} <${process.env.EMAIL_FROM}>`, // dynamic sender
+      from: `${senderName} <${process.env.EMAIL_FROM}>`, // dynamic sender
       to: email,
       subject: title,
       html: `
@@ -49,6 +49,8 @@ await resend.emails.send({
         </div>
       `,
     });
+
+    console.log("Message sent successfully");
 
     if (error) {
       return res.status(500).json({ message: "Email failed", error });
@@ -96,6 +98,8 @@ await agenda.schedule(time, "general reminder", {
   receiverName
 
 });
+
+console.log("Reminder scheduled successfully");
 
 return res.status(200).json({ message: "Reminder scheduled successfully" });
 
