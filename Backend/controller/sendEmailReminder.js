@@ -26,15 +26,15 @@ export const generalReminder = () => {
       const jobData = job.attrs?.data;
       if (!jobData) throw new Error('Job data is missing');
 
-      const { userId, reason, senderEmail, receiverEmail, receiverName } = jobData;
+      const {  reason, senderName, receiverEmail, receiverName } = jobData;
 
-      if (!userId || !reason || !senderEmail || !receiverEmail) {
+      if ( !reason || !senderName || !receiverEmail) {
         throw new Error('Missing required fields in job data');
       }
 
       // Send email and validate provider response
       const { data, error } = await resend.emails.send({
-        from: `${senderEmail} <${process.env.EMAIL_FROM}>`,
+        from: `${senderName} <${process.env.EMAIL_FROM}>`,
         to: receiverEmail,
         subject: `Reminder: ${reason}`,
         html: `
@@ -42,7 +42,7 @@ export const generalReminder = () => {
             <h2 style="color:#4CAF50;margin-bottom:20px;">Reminder</h2>
             <p>Dear ${receiverName},</p>
             <p style="padding:15px;background-color:#fff;border-radius:6px;border:1px solid #ddd;font-size:16px;line-height:1.8;">
-              ${reason}
+             please this is a reminder in regards to ${reason} 
             </p>
             <p>Best regards,<br/><strong>SmartVA Team</strong></p>
           </div>

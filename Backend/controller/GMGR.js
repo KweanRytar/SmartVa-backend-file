@@ -78,8 +78,10 @@ if (!userId) {
 }
 
 // extract sender email using userid
-const senderEmail = await User.findById(userId).select("email");
-if (!senderEmail) {
+const senderName = await User.findById(userId).select("userName");
+console.log("Sender name:", senderName);
+
+if (!senderName) {
   return res.status(404).json({ message: "Sender email not found" });
 }
 
@@ -91,9 +93,9 @@ if (!reason || !time || !receiverEmail) {
 
 // schedule reminder with agenda
 await agenda.schedule(time, "general reminder", {
-  userId,
+
   reason,
-  senderEmail,
+  senderName,
   receiverEmail,
   receiverName
 
