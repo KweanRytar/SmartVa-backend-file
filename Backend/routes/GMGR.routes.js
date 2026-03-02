@@ -4,5 +4,7 @@ import { authenticate } from "../middlewares/authenticate.js";
 
 const router = Router();
 
-router.post('/general-message', authenticate, GeneralMessage);
+router.post('/send-general-message', authenticate, GeneralMessage);
 router.post('/general-reminder', authenticate, GeneralReminder);
+
+export default router;
