@@ -12,7 +12,12 @@ import mongoose from "mongoose";
 
 export const agenda = new Agenda({
   db: { address: process.env.MONGO_URL, collection: 'agendaJobs' },
-  processEvery: '5 seconds'
+  processEvery: '1 second',        // Check every second
+  maxConcurrency: 20,               // Run up to 20 jobs at once
+  defaultConcurrency: 5,            // Default 5 per job type
+  lockLimit: 0,                     // No limit on locks
+  defaultLockLimit: 0,              // No limit per job type
+  defaultLockLifetime: 10 * 60 * 1000  // 10 minutes
 });
 
 // Create event

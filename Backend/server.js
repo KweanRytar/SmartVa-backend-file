@@ -2,6 +2,18 @@
 //                server.js
 // ================================================
 
+//  ERROR HANDLERS FIRST - BEFORE ANYTHING ELSE
+process.on('unhandledRejection', (reason, promise) => {
+  console.error(' Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error(' Uncaught Exception:', error);
+  process.exit(1);
+});
+
+// NOW load environment variables
 import dotenv from "dotenv";
 if (process.env.NODE_ENV !== "production") {
   dotenv.config();
@@ -52,14 +64,13 @@ sendEmail();
 sendNotifications();
 deleteExpiredEvents();
 generalReminder();
-agenda.start();
+await agenda.start();
 
 // ================================================
 //                Middleware
 // ================================================
 app.use(express.json());
 app.use(cookieParser());
-
 
 // SET PROXY
 app.set('trust proxy', 1);
@@ -78,9 +89,7 @@ app.use(cors({
 // ================================================
 //                Routes
 // ================================================
-app.get("/", (req, res) => {
-  res.status(200).send("SmartVA backend is alive 🚀");
-});
+
 
 app.use("/contact", contactRoutes);
 app.use("/document", documentRoutes);
@@ -92,7 +101,7 @@ app.use("/notes", noteRoutes);
 app.use("/profile", profileRoutes);
 app.use("/general", GMGRRoutes)
 
-// Error handling (last)
+// Error handling 
 app.use(errorHandler);
 
 // ================================================
